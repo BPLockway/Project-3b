@@ -133,6 +133,15 @@ LRESULT CALLBACK SearchWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
+void merge_sort(std::vector<NameEntry>& arr, int left, int right);
+bool compare_alphabetially(const NameEntry& a, const NameEntry& b) {
+    return a.name < b.name;
+}
+bool compare_frequency(const NameEntry& a, const NameEntry& b) {
+    return a.frequency > b.frequency;
+}
+void quick_sort(std::vector<NameEntry>& arr, int low, int high);
+
 // Function to show the search dialog
 void ShowSearchDialog(HWND parent) {
     WNDCLASSA wc = {};
@@ -188,13 +197,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 case 4: // Search
                     ShowSearchDialog(hwnd);
                     break;
-                case 5: { // Sort A-Z
-                    std::sort(dataset.begin(), dataset.end(), [](auto& a, auto& b) { return a.name < b.name; });
+                case 5: { // Sort A-Z using merge sort
+                    merge_sort(dataset, 0, dataset.size());
                     DisplayMessage(hwnd, "Sorted alphabetically.");
                     break;
                 }
                 case 6: { // Sort by Frequency
-                    std::sort(dataset.begin(), dataset.end(), [](auto& a, auto& b) { return a.frequency > b.frequency; });
+                    quick_sort(dataset, 0, dataset.size() - 1);
                     DisplayMessage(hwnd, "Sorted by frequency (descending).");
                     break;
                 }
@@ -210,6 +219,74 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     return DefWindowProcA(hwnd, uMsg, wParam, lParam);
 }
+
+void merge(std::vector<NameEntry>& arr, int left, int mid, int right) {
+    int start = left;
+    int leftEnd = mid;
+    int rightEnd = right;
+    std::vector<NameEntry> tempArr;
+    while (left < leftEnd && mid < rightEnd) {
+        if (compare_alphabetially(arr[left], arr[mid])) {
+            tempArr.push_back(arr[left]);
+            left++;
+        } else {
+            tempArr.push_back(arr[mid]);
+            mid++;
+        }
+    }
+    while (left < leftEnd) {
+        tempArr.push_back(arr[left]);
+        left++;
+    }
+    while (mid < rightEnd) {
+        tempArr.push_back(arr[mid]);
+        mid++;
+    }
+    for (int i = start; i < right; i++) {
+        arr[i] = tempArr[i - start];
+    }
+
+}
+
+void merge_sort(std::vector<NameEntry>& arr, int left, int right) {
+    if (left < right -1){
+        int mid = left + (left - right) / 2;
+        merge_sort(arr, left, mid);
+        merge_sort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
+    }
+}
+int partition(std::vector<NameEntry>& arr, int low, int high) {
+    NameEntry pivot = arr[low];
+    int up = low, down = high;
+  
+    while (up < down) {
+        for (int j = up; j < high; j++){
+            if (compare_frequency(arr[j], pivot)) 
+                break;
+            up++;
+        }
+        for (int j = high; j > low; j--){
+            if (compare_frequency(pivot, arr[j])) 
+                break;
+            down--;
+        }
+        if (up < down)
+            std::swap(arr[up], arr[down]);
+    }
+    std::swap(arr[low], arr[down]);
+    return down;
+  }
+  
+  // quick sort function from lecture
+  void quickSort(std::vector<NameEntry>& arr, int low, int high) {
+    if (low < high) {
+      int pivot = partition(arr, low, high);
+  
+      quickSort(arr, low, pivot - 1);
+      quickSort(arr, pivot + 1, high);
+    }
+  }
 
 // Function to add a button to a window
 void AddButton(HWND hwnd, const char* text, int id, int y) {
